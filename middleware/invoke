@@ -1,0 +1,5 @@
+#!/bin/sh
+
+/usr/bin/invoke_app "$@" -C "start_jupyter -A -T @tool pc4training.ipynb" \
+    -t pc4training \
+    -u anaconda3-5.1
