@@ -13,7 +13,7 @@ from notebook import notebookapp
 from config import ConfigTab
 from microenv_params import MicroenvTab
 from user_params import UserTab
-from svg import SVGTab
+# from svg import SVGTab
 from substrates import SubstrateTab
 from pathlib import Path
 import platform
@@ -45,7 +45,7 @@ tree = ET.parse(full_xml_filename)  # this file cannot be overwritten; part of t
 xml_root = tree.getroot()
 microenv_tab = MicroenvTab()
 user_tab = UserTab()
-svg = SVGTab()
+# svg = SVGTab()
 sub = SubstrateTab()
 
 nanoHUB_flag = False
@@ -80,11 +80,11 @@ def read_config_cb(_b):
     
     # update visualization tabs
     if is_dir:
-        svg.update(read_config.value)
+        # svg.update(read_config.value)
         sub.update(read_config.value)
     else:  # may want to distinguish "DEFAULT" from other saved .xml config files
         # FIXME: really need a call to clear the visualizations
-        svg.update('')
+        # svg.update('')
         sub.update('')
         
 
@@ -200,7 +200,7 @@ def run_done_func(s, rdir):
     #     print('run_done_func: ---- after updating read_config.options')
 
     # and update visualizations
-    svg.update(rdir)
+    # svg.update(rdir)
     sub.update(rdir)
     # with debug_view:
     #     print('RDF DONE')
@@ -232,7 +232,7 @@ def run_sim_func(s):
 
     tdir = os.path.abspath('tmpdir')
     os.chdir(tdir)  # operate from tmpdir; temporary output goes here.  may be copied to cache later
-    svg.update(tdir)
+    # svg.update(tdir)
     sub.update(tdir)
 
     if nanoHUB_flag:
@@ -256,7 +256,7 @@ def outcb(s):
     # Only update file list for certain messages: 
     if "simulat" in s:
         # New Data. update visualizations
-        svg.update('')
+        # svg.update('')
         sub.update('')
     return s
 
@@ -288,7 +288,7 @@ def run_button_cb(s):
 
     tdir = os.path.abspath('tmpdir')
     os.chdir(tdir)  # operate from tmpdir; temporary output goes here.  may be copied to cache later
-    svg.update(tdir)
+    # svg.update(tdir)
     sub.update(tdir)
 
     subprocess.Popen(["../bin/myproj", "config.xml"])
@@ -353,8 +353,10 @@ if url is not None:
 #tab.set_title(0, "Terminal")
 #display(tab)
 
-titles = ['About', 'Terminal', 'Config Basics', 'Microenvironment', 'User Params', 'Out: Cell Plots', 'Out: Substrate Plots']
-tabs = widgets.Tab(children=[about_tab.tab, term_tab, config_tab.tab, microenv_tab.tab, user_tab.tab, svg.tab, sub.tab],
+#titles = ['About', 'Terminal', 'Config Basics', 'Microenvironment', 'User Params', 'Out: Cell Plots', 'Out: Substrate Plots']
+titles = ['About', 'Terminal', 'Out: Plots']
+#tabs = widgets.Tab(children=[about_tab.tab, term_tab, config_tab.tab, microenv_tab.tab, user_tab.tab, svg.tab, sub.tab],
+tabs = widgets.Tab(children=[about_tab.tab, term_tab, sub.tab],
                    _titles={i: t for i, t in enumerate(titles)},
                    layout=tab_layout)
 
@@ -366,16 +368,18 @@ if nanoHUB_flag or hublib_flag:
     remote_cb = widgets.Checkbox(indent=False, value=False, description='Submit as Batch Job to Clusters/Grid')
 
     top_row = widgets.HBox(children=[read_config, tool_title])
-    gui = widgets.VBox(children=[top_row, tabs, run_button.w])
+    # gui = widgets.VBox(children=[top_row, tabs, run_button.w])
+    gui = widgets.VBox(children=[top_row, tabs])
     fill_gui_params(read_config.options['DEFAULT'])
 else:
     top_row = widgets.HBox(children=[tool_title])
-    gui = widgets.VBox(children=[top_row, tabs, run_button])
+    # gui = widgets.VBox(children=[top_row, tabs, run_button])
+    gui = widgets.VBox(children=[top_row, tabs])
     fill_gui_params("data/PhysiCell_settings.xml")
 
 
 # pass in (relative) directory where output data is located
 output_dir = "tmpdir"
-svg.update(output_dir)
+# svg.update(output_dir)
 sub.update_dropdown_fields("data")
 sub.update(output_dir)
