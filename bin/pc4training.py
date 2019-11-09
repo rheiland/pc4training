@@ -8,6 +8,8 @@ import datetime
 import tempfile
 from about import AboutTab
 # from terminal import TerminalTab
+from notebook import notebookapp
+
 from config import ConfigTab
 from microenv_params import MicroenvTab
 from user_params import UserTab
@@ -328,7 +330,26 @@ if nanoHUB_flag or hublib_flag:
 tab_height = 'auto'
 tab_layout = widgets.Layout(width='auto',height=tab_height, overflow_y='scroll',)   # border='2px solid black',
 
-term_tab = widgets.Tab([widgets.HTML(value="<iframe width='100%' height='100%' src='../terminals/new'></iframe>", layout=widgets.Layout(height='600px'))])
+#---------------------
+#term_tab = widgets.Tab([widgets.HTML(value="<iframe width='100%' height='100%' src='../terminals/new'></iframe>", layout=widgets.Layout(height='600px'))])
+
+servers = list(notebookapp.list_running_servers())
+url = None
+if nanoHUB_flag:
+    with open(os.environ["SESSIONDIR"]+"/resources") as file:
+        sessionid = [line.split(" ", 1)[1].strip() for line in file.readlines() if line.startswith('sessionid')]
+        if len(sessionid) > 0:
+            url = [server['base_url'] for server in servers if sessionid[0] in server['base_url']]
+            url = url[0] + "terminals/new"
+else:
+    # url = "/" + "terminals/new"
+    url = "/" 
+if url is not None:
+   term_tab = widgets.Tab([widgets.HTML(value="<iframe width='100%' height='100%' src='"+url+"'></iframe>", layout=widgets.Layout(height='600px'))])
+#   tab.set_title(0, "Terminal")
+#   display(tab)
+#---------------------
+
 #tab.set_title(0, "Terminal")
 #display(tab)
 
