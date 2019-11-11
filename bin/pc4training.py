@@ -345,7 +345,10 @@ else:
     # url = "/" + "terminals/new"
     url = "/" 
 if url is not None:
-   term_tab = widgets.Tab([widgets.HTML(value="<iframe width='100%' height='100%' src='"+url+"'></iframe>", layout=widgets.Layout(height='600px'))])
+#    term_tab = widgets.Tab([widgets.HTML(value="<iframe width='100%' height='100%' src='"+url+"'></iframe>", layout=widgets.Layout(height='600px'))])
+    iframe = "<iframe width='100%' height='100%' src='"+url+"'></iframe>"
+    html = widgets.HTML(value="", layout=widgets.Layout(height='600px'))
+    term_tab = widgets.Tab([html])
 #   tab.set_title(0, "Terminal")
 #   display(tab)
 #---------------------
@@ -356,9 +359,13 @@ if url is not None:
 #titles = ['About', 'Terminal', 'Config Basics', 'Microenvironment', 'User Params', 'Out: Cell Plots', 'Out: Substrate Plots']
 titles = ['About', 'Terminal', 'Out: Plots']
 #tabs = widgets.Tab(children=[about_tab.tab, term_tab, config_tab.tab, microenv_tab.tab, user_tab.tab, svg.tab, sub.tab],
+# tabs = widgets.Tab(children=[about_tab.tab, term_tab, sub.tab],
+                #    _titles={i: t for i, t in enumerate(titles)},
+                #    layout=tab_layout)
 tabs = widgets.Tab(children=[about_tab.tab, term_tab, sub.tab],
-                   _titles={i: t for i, t in enumerate(titles)},
-                   layout=tab_layout)
+                  _titles={i: t for i, t in enumerate(titles)},
+                  layout=tab_layout)
+tabs.observe(lambda c, w=html: setattr(w, "value", iframe if c["new"] == 1 else ""), names=['selected_index'])
 
 homedir = os.getcwd()
 
