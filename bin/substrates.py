@@ -44,17 +44,6 @@ class SubstrateTab(object):
 
         self.use_defaults = True
 
-        # functional test
-        self.svg_xmin = 0
-        self.svg_xrange = 1500
-        self.xmin = -750.
-        self.xmax = 750.
-        self.ymin = -750.
-        self.ymax = 750.
-        self.x_range = 1500.
-        self.y_range = 1500.
-
-        # hetero
         self.svg_xmin = 0
         self.svg_xrange = 2000
         self.xmin = -1000.
@@ -65,7 +54,7 @@ class SubstrateTab(object):
         self.y_range = 2000.
 
         self.show_nucleus = 0
-        self.show_edge = True
+        self.show_edge = False
 
         # initial value
         self.field_index = 4
@@ -75,8 +64,8 @@ class SubstrateTab(object):
         self.numx = 0
         self.numy = 0
 
-        tab_height = '500px'
         tab_height = '600px'
+        tab_height = '500px'
         constWidth = '180px'
         constWidth2 = '150px'
         tab_layout = Layout(width='900px',   # border='2px solid black',
@@ -126,7 +115,7 @@ class SubstrateTab(object):
         # )
         self.field_cmap = Dropdown(
             options=['viridis', 'jet', 'YlOrRd'],
-            value='viridis',
+            value='YlOrRd',
             #     description='Field',
            layout=Layout(width=constWidth)
         )
@@ -206,28 +195,10 @@ class SubstrateTab(object):
         field_cmap_row3 = Box(children=items_auto, layout=box_layout)
 
         #---------------------
-        self.cells_toggle = Checkbox(
-            description='Cells',
-            disabled=False,
-            value=True,
-#           layout=Layout(width=constWidth2),
-        )
-        def cells_toggle_cb(b):
-            # self.update()
-            self.mcds_plot.update()
-        #     if (self.cells_toggle.value):
-        #         self.cmap_min.disabled = False
-        #         self.cmap_max.disabled = False
-        #     else:
-        #         self.cmap_min.disabled = True
-        #         self.cmap_max.disabled = True
-
-        self.cells_toggle.observe(cells_toggle_cb)
-
         self.cell_edges_toggle = Checkbox(
             description='edges',
             disabled=False,
-            value=True,
+            value=False,
 #           layout=Layout(width=constWidth2),
         )
         def cell_edges_toggle_cb(b):
@@ -239,6 +210,22 @@ class SubstrateTab(object):
             self.mcds_plot.update()
 
         self.cell_edges_toggle.observe(cell_edges_toggle_cb)
+
+        self.cells_toggle = Checkbox(
+            description='Cells',
+            disabled=False,
+            value=True,
+#           layout=Layout(width=constWidth2),
+        )
+        def cells_toggle_cb(b):
+            # self.update()
+            self.mcds_plot.update()
+            if (self.cells_toggle.value):
+                self.cell_edges_toggle.disabled = False
+            else:
+                self.cell_edges_toggle.disabled = True
+
+        self.cells_toggle.observe(cells_toggle_cb)
 
         #---------------------
         self.substrates_toggle = Checkbox(
@@ -306,7 +293,8 @@ class SubstrateTab(object):
                             align_items='stretch',
                             flex_direction='row',
                             display='flex'))
-        row2b = Box( [self.substrates_toggle, self.grid_toggle], layout=Layout(border='1px solid black',
+        # row2b = Box( [self.substrates_toggle, self.grid_toggle], layout=Layout(border='1px solid black',
+        row2b = Box( [self.substrates_toggle, ], layout=Layout(border='1px solid black',
                             width='50%',
                             height='',
                             align_items='stretch',
@@ -318,7 +306,10 @@ class SubstrateTab(object):
         if (hublib_flag):
             self.download_button = Download('mcds.zip', style='warning', icon='cloud-download', 
                                                 tooltip='Download data', cb=self.download_cb)
-            download_row = HBox([self.download_button.w, Label("Download all substrate data (browser must allow pop-ups).")])
+
+            self.download_svg_button = Download('svg.zip', style='warning', icon='cloud-download', 
+                                            tooltip='You need to allow pop-ups in your browser', cb=self.download_svg_cb)
+            download_row = HBox([self.download_button.w, self.download_svg_button.w, Label("Download all cell plots (browser must allow pop-ups).")])
 
     #        self.tab = VBox([row1, row2, self.mcds_plot])
             # self.tab = VBox([row1, row2, self.mcds_plot, download_row])
@@ -407,6 +398,13 @@ class SubstrateTab(object):
         #     last_file = all_files[-1]
         #     self.max_frames.value = int(last_file[-12:-4])  # assumes naming scheme: "output%08d.xml"
         #     self.mcds_plot.update()
+
+    def download_svg_cb(self):
+        file_str = os.path.join(self.output_dir, '*.svg')
+        # print('zip up all ',file_str)
+        with zipfile.ZipFile('svg.zip', 'w') as myzip:
+            for f in glob.glob(file_str):
+                myzip.write(f, os.path.basename(f))   # 2nd arg avoids full filename path in the archive
 
     def download_cb(self):
         file_xml = os.path.join(self.output_dir, '*.xml')
@@ -651,17 +649,22 @@ class SubstrateTab(object):
         # rwh - is this where I change size of render window?? (YES - yipeee!)
         #   plt.figure(figsize=(6, 6))
         #   plt.cla()
+        # if (self.substrates_toggle.value):
         title_str += " (" + str(num_cells) + " agents)"
-        #   plt.title(title_str)
+            # title_str = " (" + str(num_cells) + " agents)"
+        # else:
+            # mins= round(int(float(root.find(".//current_time").text)))  # TODO: check units = mins
+            # hrs = int(mins/60)
+            # days = int(hrs/24)
+            # title_str = '%dd, %dh, %dm' % (int(days),(hrs%24), mins - (hrs*60))
+        plt.title(title_str)
+
         #   plt.xlim(axes_min,axes_max)
         #   plt.ylim(axes_min,axes_max)
         #   plt.scatter(xvals,yvals, s=rvals*scale_radius, c=rgbs)
 
         # TODO: make figsize a function of plot_size? What about non-square plots?
         # self.fig = plt.figure(figsize=(9, 9))
-        # self.fig = plt.figure(figsize=(18, 18))
-        # self.fig = plt.figure(figsize=(15, 15))  # 
-        # self.fig = plt.figure(figsize=(9, 9))  # 
 
 #        axx = plt.axes([0, 0.05, 0.9, 0.9])  # left, bottom, width, height
 #        axx = fig.gca()
@@ -745,9 +748,6 @@ class SubstrateTab(object):
             # plt.clf()
             # my_plot = plt.imshow(f.reshape(400,400), cmap='jet', extent=[0,20, 0,20])
         
-            # self.fig = plt.figure(figsize=(7.2,6))  # this strange figsize results in a ~square contour plot
-            # self.fig = plt.figure(figsize=(24.0,20))  # this strange figsize results in a ~square contour plot
-
             # self.fig = plt.figure(figsize=(18.0,15))  # this strange figsize results in a ~square contour plot
 
             # plt.subplot(grid[0:1, 0:1])
@@ -816,17 +816,17 @@ class SubstrateTab(object):
             main_ax.set_xlim([self.xmin, self.xmax])
             main_ax.set_ylim([self.ymin, self.ymax])
 
-            if (frame == 0):
-                xs = np.linspace(self.xmin,self.xmax,self.numx)
-                ys = np.linspace(self.ymin,self.ymax,self.numy)
-                hlines = np.column_stack(np.broadcast_arrays(xs[0], ys, xs[-1], ys))
-                vlines = np.column_stack(np.broadcast_arrays(xs, ys[0], xs, ys[-1]))
-                grid_lines = np.concatenate([hlines, vlines]).reshape(-1, 2, 2)
-                line_collection = LineCollection(grid_lines, color="gray", linewidths=0.5)
-                # ax = main_ax.gca()
-                main_ax.add_collection(line_collection)
-                # ax.set_xlim(xs[0], xs[-1])
-                # ax.set_ylim(ys[0], ys[-1])
+            # if (frame == 0):  # maybe allow substrate grid display later
+            #     xs = np.linspace(self.xmin,self.xmax,self.numx)
+            #     ys = np.linspace(self.ymin,self.ymax,self.numy)
+            #     hlines = np.column_stack(np.broadcast_arrays(xs[0], ys, xs[-1], ys))
+            #     vlines = np.column_stack(np.broadcast_arrays(xs, ys[0], xs, ys[-1]))
+            #     grid_lines = np.concatenate([hlines, vlines]).reshape(-1, 2, 2)
+            #     line_collection = LineCollection(grid_lines, color="gray", linewidths=0.5)
+            #     # ax = main_ax.gca()
+            #     main_ax.add_collection(line_collection)
+            #     # ax.set_xlim(xs[0], xs[-1])
+            #     # ax.set_ylim(ys[0], ys[-1])
 
 
         # Now plot the cells (possibly on top of the substrate)
@@ -864,7 +864,6 @@ class SubstrateTab(object):
 # widgets.HBox([mcds_play, mcds_slider])
 
     # def plot_oxygen(self, frame, grid):
-    #     # self.fig = plt.figure(figsize=(18.0,15))  # this strange figsize results in a ~square contour plot
     #     self.fig = plt.figure(figsize=(18.0,15))  # this strange figsize results in a ~square contour plot
     #     #plt.subplot(grid[2, 0])
     #     plt.subplot(grid[0, 2])
@@ -876,13 +875,13 @@ class SubstrateTab(object):
     def plot_plots(self, frame):
         # global current_idx, axes_max, gFileId, field_index
         #self.fig = plt.figure(figsize=(18, 12))
-        #self.fig = plt.figure(figsize=(20, 15))
-        # self.fig = plt.figure(figsize=(14, 14))
         # self.fig = plt.figure(figsize=(16.8, 14))
         if (self.substrates_toggle.value):
             self.fig = plt.figure(figsize=(14, 15.6))
         else:
-            self.fig = plt.figure(figsize=(14, 14.0))
+            # self.fig = plt.figure(figsize=(14, 14.0))
+            # self.fig = plt.figure(figsize=(14, 15.6))
+            self.fig = plt.figure(figsize=(12, 12))
         grid = plt.GridSpec(4, 3, wspace=0.10, hspace=0.2)   # (nrows, ncols)
         self.plot_substrate(frame, grid)
         # self.plot_svg(frame)
