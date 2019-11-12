@@ -1,5 +1,5 @@
 VERSION := $(shell grep . VERSION.txt | cut -f1 -d:)
-PROGRAM_NAME := biorobots
+PROGRAM_NAME:= myproj
 
 CC := g++
 # CC := g++-mp-7 # typical macports compiler name
@@ -147,9 +147,16 @@ reset:
 	rm ALL_CITATIONS.txt 
 	cp ./config/PhysiCell_settings-backup.xml ./config/PhysiCell_settings.xml 
 	
+# next 2 targets for nanoHUB
+install: all
+	cp $(PROGRAM_NAME) ../bin
+
+distclean: clean
+	rm -f ../bin/$(PROGRAM_NAME)
+
 clean:
 	rm -f *.o
-	rm -f $(PROGRAM_NAME)*
+	rm -f $(PROGRAM_NAME)
 	
 data-cleanup:
 	rm -f *.mat
