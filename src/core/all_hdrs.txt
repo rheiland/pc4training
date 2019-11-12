@@ -1,0 +1,1008 @@
+#ifndef __PhysiCell_cell_h__
+#define __PhysiCell_cell_h__
+
+#include "./PhysiCell_custom.h" 
+
+#include "../BioFVM/BioFVM.h"
+#include "./PhysiCell_phenotype.h"
+#include "./PhysiCell_cell_container.h"
+#include "./PhysiCell_constants.h"
+
+using namespace BioFVM; 
+
+namespace PhysiCell{
+class Cell_Container;
+
+class Cell_Parameters
+{
+ private:
+ public:
+	// oxygen values (in mmHg) for critical phenotype changes
+	double o2_hypoxic_threshold; // value at which hypoxic signaling starts
+	double o2_hypoxic_response; // value at which omics changes are observed 
+	double o2_hypoxic_saturation; // value at which hypoxic signalign saturates 
+	// o2_hypoxic_saturation < o2_hypoxic_threshold
+	
+	double o2_proliferation_saturation; // value at which extra o2 does not increase proliferation
+	double o2_proliferation_threshold; // value at which o2 is sufficient for proliferation
+
+	double o2_reference; // physioxic reference value, in the linked reference Phenotype
+	// o2_proliferation_threshold < o2_reference < o2_proliferation_saturation; 
+	
+	double o2_necrosis_threshold; // value at which cells start experiencing necrotic death 
+	double o2_necrosis_max; // value at which necrosis reaches its maximum rate 
+	// o2_necrosis_max < o2_necrosis_threshold
+	
+	Phenotype* pReference_live_phenotype; // reference live phenotype (typically physioxic) 
+	// Phenotype* pReference_necrotic_phenotype; // reference live phenotype (typically physioxic) 
+
+	// necrosis parameters (may evenually be moved into a reference necrotic phenotype 
+	double max_necrosis_rate; // deprecate
+	int necrosis_type; // deprecate 
+	
+	Cell_Parameters(); 
+}; 
+
+class Cell_Definition
+{
+ private:
+ public: 
+	int type; 
+	std::string name; 
+ 
+	Microenvironment* pMicroenvironment; 
+	
+	Cell_Parameters parameters; 
+	Custom_Cell_Data custom_data; 
+	Cell_Functions functions; 
+	Phenotype phenotype; 
+
+	Cell_Definition();  // done 
+	Cell_Definition( Cell_Definition& cd ); // copy constructor 
+	Cell_Definition& operator=( const Cell_Definition& cd ); // copy assignment 
+};
+
+extern Cell_Definition cell_defaults; 
+
+class Cell_State
+{
+ public:
+	std::vector<Cell*> neighbors; // not currently tracked! 
+	std::vector<double> orientation;
+	
+	double simple_pressure; 
+	
+	Cell_State(); 
+};
+
+class Cell : public Basic_Agent 
+{
+ private: 
+	Cell_Container * container;
+	int current_mechanics_voxel_index;
+	int updated_current_mechanics_voxel_index; // keeps the updated voxel index for later adjusting of current voxel index
+		
+ public:
+	std::string type_name; 
+ 
+	Custom_Cell_Data custom_data;
+	Cell_Parameters parameters;
+	Cell_Functions functions; 
+
+	Cell_State state; 
+	Phenotype phenotype; 
+	
+	void update_motility_vector( double dt_ );
+	void advance_bundled_phenotype_functions( double dt_ ); 
+	
+	void add_potentials(Cell*);       // Add repulsive and adhesive forces.
+	void set_previous_velocity(double xV, double yV, double zV);
+	int get_current_mechanics_voxel_index();
+	void turn_off_reactions(double); 		  // Turn off all the reactions of the cell
+	
+	bool is_out_of_domain;
+	bool is_movable;
+	
+	void flag_for_division( void ); // done 
+	void flag_for_removal( void ); // done 
+	
+	void start_death( int death_model_index ); 
+	void lyse_cell( void ); 
+
+	Cell* divide( void );
+	void die( void );
+	void step(double dt);
+	Cell();
+	
+	bool assign_position(std::vector<double> new_position);
+	bool assign_position(double, double, double);
+	void set_total_volume(double);
+	
+	double& get_total_volume(void); // NEW
+	
+	// mechanics 
+	void update_position( double dt ); //
+	std::vector<double> displacement; // this should be moved to state, or made private  
+
+	
+	void assign_orientation();  // if set_orientaion is defined, uses it to assign the orientation
+								// otherwise, it assigns a random orientation to the cell.
+	
+	void copy_function_pointers(Cell*);
+	
+	void update_voxel_in_container(void);
+	void copy_data(Cell *);
+	
+	void ingest_cell( Cell* pCell_to_eat ); // for use in predation, e.g., immune cells 
+
+	// I want to eventually deprecate this, by ensuring that 
+	// critical BioFVM and PhysiCell data elements are synced when they are needed 
+	
+	void set_phenotype( Phenotype& phenotype ); // no longer needed?
+	void update_radius();
+	Cell_Container * get_container();
+	
+	std::vector<Cell*>& cells_in_my_container( void ); 
+	
+	void convert_to_cell_definition( Cell_Definition& cd ); 
+};
+
+Cell* create_cell( void );  
+Cell* create_cell( Cell_Definition& cd );  
+
+
+void delete_cell( int ); 
+void delete_cell( Cell* ); 
+void save_all_cells_to_matlab( std::string filename ); 
+
+//function to check if a neighbor voxel contains any cell that can interact with me
+bool is_neighbor_voxel(Cell* pCell, std::vector<double> myVoxelCenter, std::vector<double> otherVoxelCenter, int otherVoxelIndex);  
+
+};
+
+#endif
+--------------------------------------------
+#ifndef __PhysiCell_phenotype_h__
+#define __PhysiCell_phenotype_h__
+
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <map> 
+
+#include "../BioFVM/BioFVM.h" 
+
+#include "../modules/PhysiCell_settings.h"
+
+using namespace BioFVM; 
+
+namespace PhysiCell{
+class Cell;
+class Cycle_Model; 
+class Phenotype; 
+
+/*
+// future use?
+class BM_Point
+{
+ private:
+ public:
+	std::vector<double> position; 
+	std::vector<double> unit_normal; 
+		
+	BM_Point(); 
+	
+	double distance_from_point( std::vector<double>& point ); 
+	void displacement_from_point( std::vector<double>& point, std::vector<double>& displacement ); 
+};
+*/
+
+class Phase
+{
+ public:
+	int index; // an internal index for the cycle model
+	int code; // a global identifier code 
+	std::string name; 
+	
+	bool division_at_phase_exit; // does this phase trigger division? 
+	bool removal_at_phase_exit; // does this phase trigger removal? 
+	
+	void (*entry_function)( Cell* pCell, Phenotype& phenotype, double dt ); 
+	
+	Phase(); // done
+};
+
+class Phase_Link
+{
+ public:
+	int start_phase_index;
+	int end_phase_index; 
+	
+	bool fixed_duration; 
+	
+	bool (*arrest_function)( Cell* pCell, Phenotype& phenotype, double dt ); 
+		// return true if arrested, false if not 
+		
+	void (*exit_function)( Cell* pCell, Phenotype& phenotype, double dt );
+		// function to be excecuted when completing the phase transition 
+	
+	Phase_Link(); // done
+};
+
+class Cycle_Data
+{
+ private:
+ 
+	// this maps the end_phase_index to the link index in each 
+	// phase_links[i]
+	// So, index_inverse_map[i][j] = k, corresponds to 
+	// phases[i], phase_links[i][k] (which links from phase i to phase j)
+	// transition_rates[i][k] (the transition rate from phase i to phase j) 
+	std::vector< std::unordered_map<int,int> > inverse_index_maps; 
+	
+ public:
+	Cycle_Model* pCycle_Model; 
+
+	std::string time_units; 
+	
+	std::vector< std::vector<double> > transition_rates; 
+	
+	int current_phase_index; 
+	double elapsed_time_in_phase; 
+	
+	Cycle_Data(); // done 
+	
+	// return current phase (by reference)
+	Phase& current_phase( void ); // done 
+	
+	// make the data structures consistent with the corresponding cell cycle model
+	void sync_to_cycle_model( void ); // done 
+
+	// access the transition rate from phase i to phase j (by reference)
+	double& transition_rate(int start_phase_index, int end_phase_index ); // done
+
+	double& exit_rate(int phase_index ); // This returns the first transition rate out of 
+		// phase # phase_index. It is only relevant if the phase has only one phase link 
+		// (true for many cycle models). 
+};
+
+class Cycle_Model
+{
+ private:
+ 
+	// this maps the end_phase_index to the link index in each 
+	// phase_links[i]
+	// So, index_inverse_map[i][j] = k, corresponds to 
+	// phases[i], phase_links[i][k] (which links from phase i to phase j)
+	// transition_rates[i][k] (the transition rate from phase i to phase j)
+	std::vector< std::unordered_map<int,int> > inverse_index_maps; 
+ 
+ public:
+	std::string name; 
+	int code; 
+
+	std::vector<Phase> phases; 
+	std::vector< std::vector<Phase_Link> > phase_links; 
+	
+	int default_phase_index; 
+	
+	Cycle_Data data; // this will be copied to individual cell agents 
+
+	Cycle_Model(); 
+	
+	void advance_model( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+	
+	int add_phase( int code, std::string name ); // done 
+	
+	int add_phase_link( int start_index, int end_index , 
+		bool (*arrest_function)( Cell* pCell, Phenotype& phenotype, double dt ) ); // done 
+	int add_phase_link( int start_index, int end_index , double rate , 
+		bool (*arrest_function)( Cell* pCell, Phenotype& phenotype, double dte ) ); // done 
+	
+	int find_phase_index( int code ); // done 
+	int find_phase_index( std::string name ); // done 
+	
+	double& transition_rate( int start_index , int end_index ); // done 
+	Phase_Link& phase_link(int start_index,int end_index ); // done 
+	
+	std::ostream& display( std::ostream& os ); // done 
+};
+
+class Cycle
+{
+ private:
+ 
+ public:
+	Cycle_Model* pCycle_Model; 
+	Cycle_Data data; 
+	
+	Cycle();// done 
+	
+	void advance_cycle( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+	
+	Cycle_Model& model( void ); // done 
+	Phase& current_phase( void ); // done 
+	int& current_phase_index( void ); // done 
+	
+	void sync_to_cycle_model( Cycle_Model& cm ); // done 
+};
+
+class Death_Parameters
+{
+ public:
+	std::string time_units; 
+ 
+	double unlysed_fluid_change_rate;
+	double lysed_fluid_change_rate; 
+	
+	double cytoplasmic_biomass_change_rate;
+	double nuclear_biomass_change_rate; 
+	
+	double calcification_rate; 
+	
+	double relative_rupture_volume; 
+	
+	Death_Parameters(); // done 
+};
+
+class Death
+{
+ private:
+ public:
+	std::vector<double> rates; 
+	std::vector<Cycle_Model*> models; 
+	std::vector<Death_Parameters> parameters; 
+	
+	bool dead; 
+	int current_death_model_index;
+	
+	Death(); // done 
+	
+	int add_death_model( double rate, Cycle_Model* pModel );  // done
+	int add_death_model( double rate, Cycle_Model* pModel, Death_Parameters& death_parameters); // done 
+	
+	int find_death_model_index( int code ); // done 
+	int find_death_model_index( std::string name ); // done 
+	
+	bool check_for_death( double dt ); // done
+	void trigger_death( int death_model_index ); // done 
+	
+	Cycle_Model& current_model( void ); // done
+	Death_Parameters& current_parameters( void ); // done 
+};
+
+class Volume
+{
+ public:
+	//
+	// state variables 
+	//
+	double total;
+	double solid;
+	double fluid;
+	double fluid_fraction; 
+	
+	double nuclear;
+	double nuclear_fluid;
+	double nuclear_solid; 
+
+	double cytoplasmic;
+	double cytoplasmic_fluid; 
+	double cytoplasmic_solid; 
+	
+	double calcified_fraction;
+	
+	double cytoplasmic_to_nuclear_ratio;
+	
+	double rupture_volume; // in volume units 
+	
+	//
+	// a function that can be set by the user. 
+	//
+	// void (*volume_update_function)( Cell* pCell, Phenotype& phenotype, double dt ); 
+	
+	//
+	// parameters that can be set by users 
+	//
+	double cytoplasmic_biomass_change_rate; 
+	double nuclear_biomass_change_rate; 
+	double fluid_change_rate;
+
+	double calcification_rate; 
+	
+	double target_solid_cytoplasmic;
+	double target_solid_nuclear;
+	double target_fluid_fraction;
+	
+	double target_cytoplasmic_to_nuclear_ratio;
+
+	double relative_rupture_volume; 
+	// the volume ratio (compared to initial volume at time of death) 
+	// at which a cell ruptures / lyses / bursts. 
+
+	//
+	// functions 
+	//
+	Volume(); // done 
+	
+	void divide( void ); // done 
+	void multiply_by_ratio(double); // done 
+	
+	void update( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+};
+
+class Geometry
+{
+ public:
+	double radius; 
+	double nuclear_radius; 
+	double surface_area; 
+	
+	double polarity; 
+	
+	Geometry(); // done 
+	
+	void update_radius( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+	void update_nuclear_radius( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+	void update_surface_area( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+	
+	void update( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+};
+
+class Mechanics
+{
+ public:
+	double cell_cell_adhesion_strength; 
+	double cell_BM_adhesion_strength;
+	double cell_cell_repulsion_strength;
+	double cell_BM_repulsion_strength; 
+	
+	// this is a multiple of the cell (equivalent) radius
+	double relative_maximum_adhesion_distance; 
+	// double maximum_adhesion_distance; // needed? 
+	
+	
+	Mechanics(); // done 
+	
+	void set_relative_maximum_adhesion_distance( double new_value ); // done 
+	void set_relative_equilibrium_distance( double new_value ); // done 
+	
+	void set_absolute_equilibrium_distance( Phenotype& phenotype, double new_value ); // done 
+	
+	
+};
+
+class Motility
+{
+ public:
+	bool is_motile; 
+ 
+	double persistence_time; // mean time to keep going in one direction 
+		// before resampling for a new direction. 
+	double migration_speed; // migration speed along chosen direction, 
+		// in absence of all other adhesive / repulsive forces 
+	
+	std::vector<double> migration_bias_direction; // a unit vector
+		// random motility is biased in this direction (e.g., chemotaxis)
+	double migration_bias; // how biased is motility
+		// if 0, completely random. if 1, deterministic along the bias vector 
+		
+	bool restrict_to_2D; 
+		// if true, set random motility to 2D only. 
+		
+	std::vector<double> motility_vector; 
+		
+	Motility(); // done 
+};
+
+class Secretion
+{
+ private:
+ public:
+	Microenvironment* pMicroenvironment; 
+	
+	std::vector<double> secretion_rates; 
+	std::vector<double> uptake_rates; 
+	std::vector<double> saturation_densities;
+	
+	// in the default constructor, we'll size to the default microenvironment, if 
+	// specified. (This ties to BioFVM.) 
+	Secretion(); // done 
+
+	// use this to properly size the secretion parameters to the microenvironment in 
+	// pMicroenvironment
+	void sync_to_current_microenvironment( void ); // done 
+	
+	void advance( Basic_Agent* pCell, Phenotype& phenotype , double dt ); 
+	
+	// use this to properly size the secretion parameters to the microenvironment 
+	void sync_to_microenvironment( Microenvironment* pNew_Microenvironment ); // done 
+	
+	void set_all_secretion_to_zero( void ); // NEW
+	void set_all_uptake_to_zero( void ); // NEW
+	void scale_all_secretion_by_factor( double factor ); // NEW
+	void scale_all_uptake_by_factor( double factor ); // NEW
+};
+
+class Cell_Functions
+{
+ private:
+ public:
+	Cycle_Model cycle_model; 
+
+	void (*volume_update_function)( Cell* pCell, Phenotype& phenotype , double dt ); // used in cell 
+	void (*update_migration_bias)( Cell* pCell, Phenotype& phenotype, double dt ); 
+	
+	void (*custom_cell_rule)( Cell* pCell, Phenotype& phenotype, double dt ); 
+	void (*update_phenotype)( Cell* pCell, Phenotype& phenotype, double dt ); // used in celll
+	
+	void (*update_velocity)( Cell* pCell, Phenotype& phenotype, double dt ); 
+	
+	void (*add_cell_basement_membrane_interactions)(Cell* pCell, Phenotype& phenotype, double dt );
+	double (*calculate_distance_to_membrane)( Cell* pCell, Phenotype& phenotype, double dt );
+	
+	void (*set_orientation)(Cell* pCell, Phenotype& phenotype, double dt );
+	
+	void (*contact_function)(Cell* pMyself, Phenotype& my_phenotype, 
+		Cell* pOther, Phenotype& other_phenotype, double dt ); 
+		
+	/* prototyping / beta in 1.5.0 */ 
+/*	
+	void (*internal_substrate_function)(Cell* pCell, Phenotype& phenotype , double dt ); 
+	void (*molecular_model_function)(Cell* pCell, Phenotype& phenotype , double dt ); 
+*/
+	
+	Cell_Functions(); // done 
+};
+
+class Bools
+{
+	public:
+		std::vector<bool> values; 
+		std::unordered_map<std::string,int> name_map; 
+		std::string& name( int i ); 
+		std::vector<std::string> units; 
+		
+		int size( void ); 
+		void resize( int n ); 
+		int add( std::string name , std::string units , bool value ); 
+		
+		bool& operator[]( int i ); 
+		bool& operator[]( std::string name ); 
+		
+		Bools(); 
+};
+
+class Molecular
+{
+	private:
+	public: 
+		Microenvironment* pMicroenvironment; 
+	
+		// model much of this from Secretion 
+		Molecular(); 
+ 	
+		// we'll set this to replace BioFVM's version		
+		std::vector<double> internalized_total_substrates; 
+
+		// for each substrate, a fraction 0 <= f <= 1 of the 
+		// total internalized substrate is released back inot
+		// the environment at death 
+		std::vector<double> fraction_released_at_death; 
+
+		// for each substrate, a fraction 0 <= f <= 1 of the 
+		// total internalized substrate is transferred to the  
+		// predatory cell when ingested 
+		std::vector<double> fraction_transferred_when_ingested; 
+		
+		/* prototyping / beta in 1.5.0 */ 
+		// Boolean, Integer, and Double parameters
+/*		
+		std::vector<bool> bools; 
+		std::unordered_map<std::string,int> bool_name_map; 
+		std::string& bool_name( int i ); 
+		std::vector<std::string> bool_units; 
+		void resize_bools( int n ); 
+		int add_bool( std::string name , std::string units , bool value ); 
+		bool& access_bool( std::string name ); 
+		
+		std::vector<int> ints; 
+		std::unordered_map<std::string,int> int_name_map; 
+		std::string& int_name( int i ); 
+		std::vector<std::string> int_units; 
+		int& access_int( std::string name ); 
+		
+		std::vector<int> doubles; 
+		std::unordered_map<std::string,int> double_name_map; 
+		std::string& double_name( int i ); 
+		std::vector<std::string> double_units; 
+		double& access_double( std::string name ); 
+*/
+	
+		// use this to properly size the secretion parameters to the 
+		// microenvironment in molecular.pMicroenvironment. 
+		void sync_to_current_microenvironment( void ); // done 
+		
+//		void advance( Basic_Agent* pCell, Phenotype& phenotype , double dt ); 
+		
+		// use this to properly size the secretion parameters to the microenvironment in 
+		// pMicroenvironment
+		void sync_to_microenvironment( Microenvironment* pNew_Microenvironment ); // done 
+		
+		// use this 
+		void sync_to_cell( Basic_Agent* pCell ); 
+		
+};
+
+class Phenotype
+{
+ private:
+ public:
+	bool flagged_for_division; 
+	bool flagged_for_removal; 
+ 
+	Cycle cycle; 
+	Death death; 
+	Volume volume; 
+	Geometry geometry; 
+	Mechanics mechanics; 
+	Motility motility; 
+	Secretion secretion; 
+	
+	Molecular molecular; 
+	
+	Phenotype(); // done 
+	
+	void sync_to_functions( Cell_Functions& functions ); // done 
+	
+	void sync_to_microenvironment( Microenvironment* pMicroenvironment ); 
+	
+	// make sure cycle, death, etc. are synced to the defaults. 
+	void sync_to_default_functions( void ); // done 
+};
+
+};
+
+#endif
+
+--------------------------------------------
+#ifndef __PhysiCell_cell_container_h__
+#define __PhysiCell_cell_container_h__
+
+#include <vector>
+#include "PhysiCell_cell.h"
+#include "../BioFVM/BioFVM_agent_container.h"
+#include "../BioFVM/BioFVM_mesh.h"
+#include "../BioFVM/BioFVM_microenvironment.h"
+
+namespace PhysiCell{
+
+class Cell; 
+
+class Cell_Container : public BioFVM::Agent_Container
+{
+ private:	
+	std::vector<Cell*> cells_ready_to_divide; // the index of agents ready to divide
+	std::vector<Cell*> cells_ready_to_die;
+	int boundary_condition_for_pushed_out_agents; 	// what to do with pushed out cells
+	bool initialzed = false;
+	
+ public:
+	BioFVM::Cartesian_Mesh underlying_mesh;
+	std::vector<double> max_cell_interactive_distance_in_voxel;
+	int num_divisions_in_current_step;
+	int num_deaths_in_current_step;
+
+	double last_diffusion_time  = 0.0; 
+	double last_cell_cycle_time = 0.0;
+	double last_mechanics_time  = 0.0;
+	Cell_Container();
+ 	void initialize(double x_start, double x_end, double y_start, double y_end, double z_start, double z_end , double voxel_size);
+	void initialize(double x_start, double x_end, double y_start, double y_end, double z_start, double z_end , double dx, double dy, double dz);
+	std::vector<std::vector<Cell*> > agent_grid;
+	std::vector<std::vector<Cell*> > agents_in_outer_voxels;
+	
+	void update_all_cells(double t);
+	void update_all_cells(double t, double dt);
+	void update_all_cells(double t, double phenotype_dt, double mechanics_dt);
+	void update_all_cells(double t, double phenotype_dt, double mechanics_dt, double diffusion_dt ); 
+
+	void register_agent( Cell* agent );
+	void add_agent_to_outer_voxel(Cell* agent);
+	void remove_agent(Cell* agent );
+	void remove_agent_from_voxel(Cell* agent, int voxel_index);
+	void add_agent_to_voxel(Cell* agent, int voxel_index);
+	
+	void flag_cell_for_division( Cell* pCell ); 
+	void flag_cell_for_removal( Cell* pCell ); 
+	bool contain_any_cell(int voxel_index);
+};
+
+int find_escaping_face_index(Cell* agent);
+extern std::vector<Cell*> *all_cells; 
+
+Cell_Container* create_cell_container_for_microenvironment( BioFVM::Microenvironment& m , double mechanics_voxel_size );
+
+
+
+};
+#endif
+
+--------------------------------------------
+#include <vector>
+#include <string>
+#include <unordered_map>
+#include <iostream>
+#include <fstream>
+
+#ifndef __PhysiCell_custom__
+#define __PhysiCell_custom__
+
+namespace PhysiCell
+{
+	
+class Variable
+{
+ private:
+	friend std::ostream& operator<<(std::ostream& os, const Variable& v); // done 
+ public:
+	std::string name; 
+	double value; 
+	std::string units; 
+	
+	Variable(); 
+};
+
+class Vector_Variable
+{
+ private:
+	friend std::ostream& operator<<(std::ostream& os, const Vector_Variable& v); // done 
+	
+ public:
+	std::string name; 
+	std::vector<double> value; 
+	std::string units; 
+	
+	Vector_Variable(); 
+};
+
+class Custom_Cell_Data
+{
+ private:
+	std::unordered_map<std::string,int> name_to_index_map; 
+//	std::unordered_map<std::string,int> vector_name_to_index_map; 
+	
+	friend std::ostream& operator<<(std::ostream& os, const Custom_Cell_Data& ccd); // done 
+ public:
+	std::vector<Variable> variables; 
+	std::vector<Vector_Variable> vector_variables; 
+	
+	int add_variable( Variable& v ); // done 
+	int add_variable( std::string name , std::string units , double value ); // done 
+	int add_variable( std::string name , double value ); // done 
+
+	int add_vector_variable( Vector_Variable& v ); // done 
+	int add_vector_variable( std::string name , std::string units , std::vector<double>& value ); // done 
+	int add_vector_variable( std::string name , std::vector<double>& value ); // done 
+
+	int find_variable_index( std::string name ); // done 
+//	int find_vector_variable_index( std::string name ); // done 
+
+	// these access the scalar variables 
+	double& operator[]( int i ); // done
+	double& operator[]( std::string name ); // done 
+	
+	
+	Custom_Cell_Data(); // done 
+	Custom_Cell_Data( const Custom_Cell_Data& ccd ); 
+};
+
+}; 
+
+#endif 
+
+--------------------------------------------
+#ifndef __PhysiCell_constants_h__
+#define __PhysiCell_constants_h__
+
+#include <string>
+
+namespace PhysiCell
+{
+	
+class PhysiCell_constants
+{
+ public:
+	static constexpr double pi=3.1415926535897932384626433832795;
+	
+	static constexpr double cell_removal_threshold_volume = 20; // 20 cubic microns -- about 1% of typical cell 
+	static const int keep_pushed_out_cells_in_outer_voxel=1;
+	static const int solid_boundary = 2;
+	static const int default_boundary_condition_for_pushed_out_agents = keep_pushed_out_cells_in_outer_voxel;		
+	
+	static const int deterministic_necrosis = 0;
+	static const int stochastic_necrosis = 1;
+
+	static const int oxygen_index = 0; // deprecate
+	static const int glucose_index = 1; // deprecate 
+	
+	static const int TUMOR_TYPE=0; // deprecate 
+	static const int VESSEL_TYPE=1; // deprecate 
+
+	static const int mesh_min_x_index=0;
+	static const int mesh_min_y_index=1;
+	static const int mesh_min_z_index=2;
+	static const int mesh_max_x_index=3;
+	static const int mesh_max_y_index=4;
+	static const int mesh_max_z_index=5;			
+	
+	static const int mesh_lx_face_index=0;
+	static const int mesh_ly_face_index=1;
+	static const int mesh_lz_face_index=2;
+	static const int mesh_ux_face_index=3;
+	static const int mesh_uy_face_index=4;
+	static const int mesh_uz_face_index=5;
+	
+	// currently recognized cell cycle models 
+	static const int advanced_Ki67_cycle_model= 0;
+	static const int basic_Ki67_cycle_model=1;
+	static const int flow_cytometry_cycle_model=2;
+	static const int live_apoptotic_cycle_model=3;
+	static const int total_cells_cycle_model=4;
+	static const int live_cells_cycle_model = 5; 
+	static const int flow_cytometry_separated_cycle_model = 6; 
+	static const int cycling_quiescent_model = 7; 
+	
+	// currently recognized death models 
+	static const int apoptosis_death_model = 100; 
+	static const int necrosis_death_model = 101; 
+	static const int autophagy_death_model = 102; 
+	
+	static const int custom_cycle_model=9999; 
+	
+	// currently recognized cell cycle and death phases 
+	// cycle phases
+	static const int Ki67_positive_premitotic=0; 
+	static const int Ki67_positive_postmitotic=1; 
+	static const int Ki67_positive=2; 
+	static const int Ki67_negative=3; 
+	static const int G0G1_phase=4;
+	static const int G0_phase=5;
+	static const int G1_phase=6; 
+	static const int G1a_phase=7; 
+	static const int G1b_phase=8;
+	static const int G1c_phase=9;
+	static const int S_phase=10;
+	static const int G2M_phase=11;
+	static const int G2_phase=12;
+	static const int M_phase=13;
+	static const int live=14;
+	
+	static const int G1pm_phase = 15;
+	static const int G1ps_phase = 16; 
+	
+	static const int cycling = 17; 
+	static const int quiescent = 18; 
+	
+	
+	static const int custom_phase = 9999;
+	// death phases
+	static const int apoptotic=100;
+	static const int necrotic_swelling=101;
+	static const int necrotic_lysed=102;
+	static const int necrotic=103; 
+	static const int debris=104; 
+};
+
+static std::string time_units = "min";
+static std::string space_units = "micron";
+static double diffusion_dt = 0.01; 
+static double mechanics_dt = 0.1;
+static double phenotype_dt = 6.0;
+
+};
+
+#endif
+
+--------------------------------------------
+#ifndef __PhysiCell_standard_models_h__
+#define __PhysiCell_standard_models_h__
+
+#include "./PhysiCell_constants.h" 
+#include "./PhysiCell_phenotype.h" 
+
+namespace PhysiCell
+{
+
+// standard cycle models: 
+
+extern Cycle_Model Ki67_advanced, Ki67_basic, live, flow_cytometry_cycle_model, flow_cytometry_separated_cycle_model, cycling_quiescent; 
+extern Cycle_Model apoptosis, necrosis; 
+extern Death_Parameters apoptosis_parameters, necrosis_parameters; 
+
+
+extern bool PhysiCell_standard_models_initialized; 
+extern bool PhysiCell_standard_death_models_initialized; 
+extern bool PhysiCell_standard_cycle_models_initialized; 
+
+// standard entry function for the cycle models 
+
+void standard_Ki67_positive_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+void standard_Ki67_negative_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+void standard_live_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+
+void G1_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); 
+void G0_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); 
+void S_phase_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+
+void standard_apoptosis_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+void standard_necrosis_entry_function( Cell* pCell, Phenotype& phenotype, double dt );  // done 
+void standard_lysis_entry_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+
+bool standard_necrosis_arrest_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+
+// standard volume functions 
+
+void standard_volume_update_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+
+// standard mechanics functions 
+
+void standard_update_cell_velocity( Cell* pCell, Phenotype& phenotype, double dt); // done 
+void standard_add_basement_membrane_interactions( Cell* pCell, Phenotype phenotype, double dt );
+
+// other standard functions 
+
+void empty_function( Cell* pCell, Phenotype& phenotype, double dt ); // done 
+void up_orientation( Cell* pCell, Phenotype& phenotype, double dt ); // done
+
+// standard o2-based phenotype changes 
+
+void update_cell_and_death_parameters_O2_based( Cell* pCell, Phenotype& phenotype, double dt ); 
+
+// create standard models 
+
+bool create_standard_cell_cycle_models( void ); // done 
+bool create_standard_cell_death_models( void ); // done 
+bool create_standard_cycle_and_death_models( void ); // done 
+
+void initialize_default_cell_definition( void ); // done 
+	
+};
+
+#endif 
+
+--------------------------------------------
+#ifndef __PhysiCell_utilities_h__
+#define __PhysiCell_utilities_h__
+
+#include <iostream>
+#include <ctime>
+#include <cmath>
+#include <string>
+#include <vector>
+#include <random>
+#include <chrono>
+
+namespace PhysiCell{
+
+long SeedRandom( long input );
+long SeedRandom( void );
+double UniformRandom( void );
+double NormalRandom( double mean, double standard_deviation );
+double dist_squared(std::vector<double> p1, std::vector<double> p2);
+double dist(std::vector<double> p1, std::vector<double> p2);
+
+std::string get_PhysiCell_version( void ); 
+void get_PhysiCell_version( std::string& pString ); 
+
+void display_citations( std::ostream& os ); 
+void display_citations( void ); 
+void add_software_citation( std::string name , std::string version, std::string DOI, std::string URL ); 
+
+int choose_event( std::vector<double>& probabilities ); 
+
+};
+
+#endif
+
+--------------------------------------------

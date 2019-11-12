@@ -1,0 +1,913 @@
+%!PS-Adobe-
+%%DocumentFonts: Courier Courier-Bold
+% PSP prologue file, version 1.0
+%
+% Copyright (c) 1989 Eric J. Kostelich
+%
+save
+/PSPstart {} def
+/p {	3 1 roll
+	Linespacing mul Textoffset exch sub
+	exch Textwidth Leftmargin add mul Leftmargin add
+	exch moveto show 
+} def
+
+/Setbold { /Courier-Bold findfont Boldsize scalefont setfont } def
+/SF { /Courier findfont Pointsize scalefont setfont } def
+%
+% (string) H  - for placing boldface titles
+%
+/H { Setbold Leftmargin Titleoffset moveto show SF } def
+%
+%  Normal mode - use titles, 54 lines/page
+%
+/Usual {/Leftmargin 66 def  /Textoffset 708 def /Titleoffset 738 def
+	/Boldsize 12 def  /Pointsize 10 def /Linespacing 12 def
+	/Textwidth 480 def /Rotatemode false def
+} def
+%
+%  Plain mode - no titles, 66 lines/page
+%
+/Plain {/Leftmargin 72 def  /Textoffset 756 def
+	/Boldsize 14 def  /Pointsize 9 def /Linespacing 11 def
+	/Textwidth 480 def /Rotatemode false def
+} def
+%
+% Rotated, two-column mode - 65 lines/column
+%
+/Rotated { /Rotatemode true def } def
+/Rotatepage { 612 0 translate 90 rotate
+	/Leftmargin 36 def /Textoffset 550 def /Titleoffset 568 def
+	/Boldsize 12 def  /Pointsize 7 def  /Linespacing 8 def
+	/Textwidth 336 def
+} def
+/Startpage { Rotatemode {Rotatepage} if SF } def
+/Endpage {showpage} def
+/PSPend {restore} def
+%%EndPrologue
+Rotated
+%%Page 1 1
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       1)H
+0 0(#ifndef __PhysiCell_cell_h__)p
+0 1(#define __PhysiCell_cell_h__)p
+0 3(#include "./PhysiCell_custom.h")p
+0 5(#include "../BioFVM/BioFVM.h")p
+0 6(#include "./PhysiCell_phenotype.h")p
+0 7(#include "./PhysiCell_cell_container.h")p
+0 8(#include "./PhysiCell_constants.h")p
+0 10(using namespace BioFVM;)p
+0 12(namespace PhysiCell{)p
+0 13(class Cell_Container;)p
+0 15(class Cell_Parameters)p
+0 16({)p
+0 17( private:)p
+0 18( public:)p
+0 19(        // oxygen values \(in mmHg\) for critical phenotype changes)p
+0 20(        double o2_hypoxic_threshold; // value at which hypoxic signaling starts)p
+0 21(        double o2_hypoxic_response; // value at which omics changes are observed)p
+0 22(        double o2_hypoxic_saturation; // value at which hypoxic signalign satura)p
+0 23(tes)p
+0 24(        // o2_hypoxic_saturation < o2_hypoxic_threshold)p
+0 26(        double o2_proliferation_saturation; // value at which extra o2 does not)p
+0 27(increase proliferation)p
+0 28(        double o2_proliferation_threshold; // value at which o2 is sufficient fo)p
+0 29(r proliferation)p
+0 31(        double o2_reference; // physioxic reference value, in the linked referen)p
+0 32(ce Phenotype)p
+0 33(        // o2_proliferation_threshold < o2_reference < o2_proliferation_saturati)p
+0 34(on;)p
+0 36(        double o2_necrosis_threshold; // value at which cells start experiencing)p
+0 37( necrotic death)p
+0 38(        double o2_necrosis_max; // value at which necrosis reaches its maximum r)p
+0 39(ate)p
+0 40(        // o2_necrosis_max < o2_necrosis_threshold)p
+0 42(        Phenotype* pReference_live_phenotype; // reference live phenotype \(typic)p
+0 43(ally physioxic\))p
+0 44(        // Phenotype* pReference_necrotic_phenotype; // reference live phenotype)p
+0 45( \(typically physioxic\))p
+0 47(        // necrosis parameters \(may evenually be moved into a reference necrotic)p
+0 48( phenotype)p
+0 49(        double max_necrosis_rate; // deprecate)p
+0 50(        int necrosis_type; // deprecate)p
+0 52(        Cell_Parameters\(\);)p
+0 53(};)p
+0 55(class Cell_Definition)p
+0 56({)p
+0 57( private:)p
+0 58( public:)p
+0 59(        int type;)p
+0 60(        std::string name;)p
+0 62(        Microenvironment* pMicroenvironment;)p
+0 64(        Cell_Parameters parameters;)p
+1 0(        Custom_Cell_Data custom_data;)p
+1 1(        Cell_Functions functions;)p
+1 2(        Phenotype phenotype;)p
+1 4(        Cell_Definition\(\);  // done)p
+1 5(        Cell_Definition\( Cell_Definition& cd \); // copy constructor)p
+1 6(        Cell_Definition& operator=\( const Cell_Definition& cd \); // copy assignm)p
+1 7(ent)p
+1 8(};)p
+1 10(extern Cell_Definition cell_defaults;)p
+1 12(class Cell_State)p
+1 13({)p
+1 14( public:)p
+1 15(        std::vector<Cell*> neighbors; // not currently tracked!)p
+1 16(        std::vector<double> orientation;)p
+1 18(        double simple_pressure;)p
+1 20(        Cell_State\(\);)p
+1 21(};)p
+1 23(class Cell : public Basic_Agent)p
+1 24({)p
+1 25( private:)p
+1 26(        Cell_Container * container;)p
+1 27(        int current_mechanics_voxel_index;)p
+1 28(        int updated_current_mechanics_voxel_index; // keeps the updated voxel in)p
+1 29(dex for later adjusting of current voxel index)p
+1 31( public:)p
+1 32(        std::string type_name;)p
+1 34(        Custom_Cell_Data custom_data;)p
+1 35(        Cell_Parameters parameters;)p
+1 36(        Cell_Functions functions;)p
+1 38(        Cell_State state;)p
+1 39(        Phenotype phenotype;)p
+1 41(        void update_motility_vector\( double dt_ \);)p
+1 42(        void advance_bundled_phenotype_functions\( double dt_ \);)p
+1 44(        void add_potentials\(Cell*\);       // Add repulsive and adhesive forces.)p
+1 45(        void set_previous_velocity\(double xV, double yV, double zV\);)p
+1 46(        int get_current_mechanics_voxel_index\(\);)p
+1 47(        void turn_off_reactions\(double\);                  // Turn off all the re)p
+1 48(actions of the cell)p
+1 50(        bool is_out_of_domain;)p
+1 51(        bool is_movable;)p
+1 53(        void flag_for_division\( void \); // done)p
+1 54(        void flag_for_removal\( void \); // done)p
+1 56(        void start_death\( int death_model_index \);)p
+1 57(        void lyse_cell\( void \);)p
+1 59(        Cell* divide\( void \);)p
+1 60(        void die\( void \);)p
+1 61(        void step\(double dt\);)p
+1 62(        Cell\(\);)p
+1 64(        bool assign_position\(std::vector<double> new_position\);)p
+Endpage
+%%Page 3 2
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       2)H
+0 0(        bool assign_position\(double, double, double\);)p
+0 1(        void set_total_volume\(double\);)p
+0 3(        double& get_total_volume\(void\); // NEW)p
+0 5(        // mechanics)p
+0 6(        void update_position\( double dt \); //)p
+0 7(        std::vector<double> displacement; // this should be moved to state, or m)p
+0 8(ade private)p
+0 11(        void assign_orientation\(\);  // if set_orientaion is defined, uses it to)p
+0 12(assign the orientation)p
+0 13(                                                                // otherwise, it)p
+0 14( assigns a random orientation to the cell.)p
+0 16(        void copy_function_pointers\(Cell*\);)p
+0 18(        void update_voxel_in_container\(void\);)p
+0 19(        void copy_data\(Cell *\);)p
+0 21(        void ingest_cell\( Cell* pCell_to_eat \); // for use in predation, e.g., i)p
+0 22(mmune cells)p
+0 24(        // I want to eventually deprecate this, by ensuring that)p
+0 25(        // critical BioFVM and PhysiCell data elements are synced when they are)p
+0 26(needed)p
+0 28(        void set_phenotype\( Phenotype& phenotype \); // no longer needed?)p
+0 29(        void update_radius\(\);)p
+0 30(        Cell_Container * get_container\(\);)p
+0 32(        std::vector<Cell*>& cells_in_my_container\( void \);)p
+0 34(        void convert_to_cell_definition\( Cell_Definition& cd \);)p
+0 35(};)p
+0 37(Cell* create_cell\( void \);)p
+0 38(Cell* create_cell\( Cell_Definition& cd \);)p
+0 41(void delete_cell\( int \);)p
+0 42(void delete_cell\( Cell* \);)p
+0 43(void save_all_cells_to_matlab\( std::string filename \);)p
+0 45(//function to check if a neighbor voxel contains any cell that can interact with)p
+0 46( me)p
+0 47(bool is_neighbor_voxel\(Cell* pCell, std::vector<double> myVoxelCenter, std::vect)p
+0 48(or<double> otherVoxelCenter, int otherVoxelIndex\);)p
+0 50(};)p
+0 52(#endif)p
+0 53(--------------------------------------------)p
+0 54(#ifndef __PhysiCell_phenotype_h__)p
+0 55(#define __PhysiCell_phenotype_h__)p
+0 57(#include <vector>)p
+0 58(#include <string>)p
+0 59(#include <unordered_map>)p
+0 60(#include <map>)p
+0 62(#include "../BioFVM/BioFVM.h")p
+0 64(#include "../modules/PhysiCell_settings.h")p
+1 1(using namespace BioFVM;)p
+1 3(namespace PhysiCell{)p
+1 4(class Cell;)p
+1 5(class Cycle_Model;)p
+1 6(class Phenotype;)p
+1 8(/*)p
+1 9(// future use?)p
+1 10(class BM_Point)p
+1 11({)p
+1 12( private:)p
+1 13( public:)p
+1 14(        std::vector<double> position;)p
+1 15(        std::vector<double> unit_normal;)p
+1 17(        BM_Point\(\);)p
+1 19(        double distance_from_point\( std::vector<double>& point \);)p
+1 20(        void displacement_from_point\( std::vector<double>& point, std::vector<do)p
+1 21(uble>& displacement \);)p
+1 22(};)p
+1 23(*/)p
+1 25(class Phase)p
+1 26({)p
+1 27( public:)p
+1 28(        int index; // an internal index for the cycle model)p
+1 29(        int code; // a global identifier code)p
+1 30(        std::string name;)p
+1 32(        bool division_at_phase_exit; // does this phase trigger division?)p
+1 33(        bool removal_at_phase_exit; // does this phase trigger removal?)p
+1 35(        void \(*entry_function\)\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 37(        Phase\(\); // done)p
+1 38(};)p
+1 40(class Phase_Link)p
+1 41({)p
+1 42( public:)p
+1 43(        int start_phase_index;)p
+1 44(        int end_phase_index;)p
+1 46(        bool fixed_duration;)p
+1 48(        bool \(*arrest_function\)\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 49(                // return true if arrested, false if not)p
+1 51(        void \(*exit_function\)\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 52(                // function to be excecuted when completing the phase transition)p
+1 54(        Phase_Link\(\); // done)p
+1 55(};)p
+1 57(class Cycle_Data)p
+1 58({)p
+1 59( private:)p
+1 61(        // this maps the end_phase_index to the link index in each)p
+1 62(        // phase_links[i])p
+1 63(        // So, index_inverse_map[i][j] = k, corresponds to)p
+1 64(        // phases[i], phase_links[i][k] \(which links from phase i to phase j\))p
+Endpage
+%%Page 5 3
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       3)H
+0 0(        // transition_rates[i][k] \(the transition rate from phase i to phase j\))p
+0 1(        std::vector< std::unordered_map<int,int> > inverse_index_maps;)p
+0 3( public:)p
+0 4(        Cycle_Model* pCycle_Model;)p
+0 6(        std::string time_units;)p
+0 8(        std::vector< std::vector<double> > transition_rates;)p
+0 10(        int current_phase_index;)p
+0 11(        double elapsed_time_in_phase;)p
+0 13(        Cycle_Data\(\); // done)p
+0 15(        // return current phase \(by reference\))p
+0 16(        Phase& current_phase\( void \); // done)p
+0 18(        // make the data structures consistent with the corresponding cell cycle)p
+0 19( model)p
+0 20(        void sync_to_cycle_model\( void \); // done)p
+0 22(        // access the transition rate from phase i to phase j \(by reference\))p
+0 23(        double& transition_rate\(int start_phase_index, int end_phase_index \); //)p
+0 24( done)p
+0 26(        double& exit_rate\(int phase_index \); // This returns the first transitio)p
+0 27(n rate out of)p
+0 28(                // phase # phase_index. It is only relevant if the phase has onl)p
+0 29(y one phase link)p
+0 30(                // \(true for many cycle models\).)p
+0 31(};)p
+0 33(class Cycle_Model)p
+0 34({)p
+0 35( private:)p
+0 37(        // this maps the end_phase_index to the link index in each)p
+0 38(        // phase_links[i])p
+0 39(        // So, index_inverse_map[i][j] = k, corresponds to)p
+0 40(        // phases[i], phase_links[i][k] \(which links from phase i to phase j\))p
+0 41(        // transition_rates[i][k] \(the transition rate from phase i to phase j\))p
+0 42(        std::vector< std::unordered_map<int,int> > inverse_index_maps;)p
+0 44( public:)p
+0 45(        std::string name;)p
+0 46(        int code;)p
+0 48(        std::vector<Phase> phases;)p
+0 49(        std::vector< std::vector<Phase_Link> > phase_links;)p
+0 51(        int default_phase_index;)p
+0 53(        Cycle_Data data; // this will be copied to individual cell agents)p
+0 55(        Cycle_Model\(\);)p
+0 57(        void advance_model\( Cell* pCell, Phenotype& phenotype, double dt \); // d)p
+0 58(one)p
+0 60(        int add_phase\( int code, std::string name \); // done)p
+0 62(        int add_phase_link\( int start_index, int end_index ,)p
+0 63(                bool \(*arrest_function\)\( Cell* pCell, Phenotype& phenotype, doub)p
+0 64(le dt \) \); // done)p
+1 0(        int add_phase_link\( int start_index, int end_index , double rate ,)p
+1 1(                bool \(*arrest_function\)\( Cell* pCell, Phenotype& phenotype, doub)p
+1 2(le dte \) \); // done)p
+1 4(        int find_phase_index\( int code \); // done)p
+1 5(        int find_phase_index\( std::string name \); // done)p
+1 7(        double& transition_rate\( int start_index , int end_index \); // done)p
+1 8(        Phase_Link& phase_link\(int start_index,int end_index \); // done)p
+1 10(        std::ostream& display\( std::ostream& os \); // done)p
+1 11(};)p
+1 13(class Cycle)p
+1 14({)p
+1 15( private:)p
+1 17( public:)p
+1 18(        Cycle_Model* pCycle_Model;)p
+1 19(        Cycle_Data data;)p
+1 21(        Cycle\(\);// done)p
+1 23(        void advance_cycle\( Cell* pCell, Phenotype& phenotype, double dt \); // d)p
+1 24(one)p
+1 26(        Cycle_Model& model\( void \); // done)p
+1 27(        Phase& current_phase\( void \); // done)p
+1 28(        int& current_phase_index\( void \); // done)p
+1 30(        void sync_to_cycle_model\( Cycle_Model& cm \); // done)p
+1 31(};)p
+1 33(class Death_Parameters)p
+1 34({)p
+1 35( public:)p
+1 36(        std::string time_units;)p
+1 38(        double unlysed_fluid_change_rate;)p
+1 39(        double lysed_fluid_change_rate;)p
+1 41(        double cytoplasmic_biomass_change_rate;)p
+1 42(        double nuclear_biomass_change_rate;)p
+1 44(        double calcification_rate;)p
+1 46(        double relative_rupture_volume;)p
+1 48(        Death_Parameters\(\); // done)p
+1 49(};)p
+1 51(class Death)p
+1 52({)p
+1 53( private:)p
+1 54( public:)p
+1 55(        std::vector<double> rates;)p
+1 56(        std::vector<Cycle_Model*> models;)p
+1 57(        std::vector<Death_Parameters> parameters;)p
+1 59(        bool dead;)p
+1 60(        int current_death_model_index;)p
+1 62(        Death\(\); // done)p
+1 64(        int add_death_model\( double rate, Cycle_Model* pModel \);  // done)p
+Endpage
+%%Page 7 4
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       4)H
+0 0(        int add_death_model\( double rate, Cycle_Model* pModel, Death_Parameters&)p
+0 1( death_parameters\); // done)p
+0 3(        int find_death_model_index\( int code \); // done)p
+0 4(        int find_death_model_index\( std::string name \); // done)p
+0 6(        bool check_for_death\( double dt \); // done)p
+0 7(        void trigger_death\( int death_model_index \); // done)p
+0 9(        Cycle_Model& current_model\( void \); // done)p
+0 10(        Death_Parameters& current_parameters\( void \); // done)p
+0 11(};)p
+0 13(class Volume)p
+0 14({)p
+0 15( public:)p
+0 16(        //)p
+0 17(        // state variables)p
+0 18(        //)p
+0 19(        double total;)p
+0 20(        double solid;)p
+0 21(        double fluid;)p
+0 22(        double fluid_fraction;)p
+0 24(        double nuclear;)p
+0 25(        double nuclear_fluid;)p
+0 26(        double nuclear_solid;)p
+0 28(        double cytoplasmic;)p
+0 29(        double cytoplasmic_fluid;)p
+0 30(        double cytoplasmic_solid;)p
+0 32(        double calcified_fraction;)p
+0 34(        double cytoplasmic_to_nuclear_ratio;)p
+0 36(        double rupture_volume; // in volume units)p
+0 38(        //)p
+0 39(        // a function that can be set by the user.)p
+0 40(        //)p
+0 41(        // void \(*volume_update_function\)\( Cell* pCell, Phenotype& phenotype, do)p
+0 42(uble dt \);)p
+0 44(        //)p
+0 45(        // parameters that can be set by users)p
+0 46(        //)p
+0 47(        double cytoplasmic_biomass_change_rate;)p
+0 48(        double nuclear_biomass_change_rate;)p
+0 49(        double fluid_change_rate;)p
+0 51(        double calcification_rate;)p
+0 53(        double target_solid_cytoplasmic;)p
+0 54(        double target_solid_nuclear;)p
+0 55(        double target_fluid_fraction;)p
+0 57(        double target_cytoplasmic_to_nuclear_ratio;)p
+0 59(        double relative_rupture_volume;)p
+0 60(        // the volume ratio \(compared to initial volume at time of death\))p
+0 61(        // at which a cell ruptures / lyses / bursts.)p
+0 63(        //)p
+0 64(        // functions)p
+1 0(        //)p
+1 1(        Volume\(\); // done)p
+1 3(        void divide\( void \); // done)p
+1 4(        void multiply_by_ratio\(double\); // done)p
+1 6(        void update\( Cell* pCell, Phenotype& phenotype, double dt \); // done)p
+1 7(};)p
+1 9(class Geometry)p
+1 10({)p
+1 11( public:)p
+1 12(        double radius;)p
+1 13(        double nuclear_radius;)p
+1 14(        double surface_area;)p
+1 16(        double polarity;)p
+1 18(        Geometry\(\); // done)p
+1 20(        void update_radius\( Cell* pCell, Phenotype& phenotype, double dt \); // d)p
+1 21(one)p
+1 22(        void update_nuclear_radius\( Cell* pCell, Phenotype& phenotype, double dt)p
+1 23( \); // done)p
+1 24(        void update_surface_area\( Cell* pCell, Phenotype& phenotype, double dt \))p
+1 25(; // done)p
+1 27(        void update\( Cell* pCell, Phenotype& phenotype, double dt \); // done)p
+1 28(};)p
+1 30(class Mechanics)p
+1 31({)p
+1 32( public:)p
+1 33(        double cell_cell_adhesion_strength;)p
+1 34(        double cell_BM_adhesion_strength;)p
+1 35(        double cell_cell_repulsion_strength;)p
+1 36(        double cell_BM_repulsion_strength;)p
+1 38(        // this is a multiple of the cell \(equivalent\) radius)p
+1 39(        double relative_maximum_adhesion_distance;)p
+1 40(        // double maximum_adhesion_distance; // needed?)p
+1 43(        Mechanics\(\); // done)p
+1 45(        void set_relative_maximum_adhesion_distance\( double new_value \); // done)p
+1 46(        void set_relative_equilibrium_distance\( double new_value \); // done)p
+1 48(        void set_absolute_equilibrium_distance\( Phenotype& phenotype, double new)p
+1 49(_value \); // done)p
+1 52(};)p
+1 54(class Motility)p
+1 55({)p
+1 56( public:)p
+1 57(        bool is_motile;)p
+1 59(        double persistence_time; // mean time to keep going in one direction)p
+1 60(                // before resampling for a new direction.)p
+1 61(        double migration_speed; // migration speed along chosen direction,)p
+1 62(                // in absence of all other adhesive / repulsive forces)p
+1 64(        std::vector<double> migration_bias_direction; // a unit vector)p
+Endpage
+%%Page 9 5
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       5)H
+0 0(                // random motility is biased in this direction \(e.g., chemotaxis)p
+0 1(\))p
+0 2(        double migration_bias; // how biased is motility)p
+0 3(                // if 0, completely random. if 1, deterministic along the bias v)p
+0 4(ector)p
+0 6(        bool restrict_to_2D;)p
+0 7(                // if true, set random motility to 2D only.)p
+0 9(        std::vector<double> motility_vector;)p
+0 11(        Motility\(\); // done)p
+0 12(};)p
+0 14(class Secretion)p
+0 15({)p
+0 16( private:)p
+0 17( public:)p
+0 18(        Microenvironment* pMicroenvironment;)p
+0 20(        std::vector<double> secretion_rates;)p
+0 21(        std::vector<double> uptake_rates;)p
+0 22(        std::vector<double> saturation_densities;)p
+0 24(        // in the default constructor, we'll size to the default microenvironmen)p
+0 25(t, if)p
+0 26(        // specified. \(This ties to BioFVM.\))p
+0 27(        Secretion\(\); // done)p
+0 29(        // use this to properly size the secretion parameters to the microenviro)p
+0 30(nment in)p
+0 31(        // pMicroenvironment)p
+0 32(        void sync_to_current_microenvironment\( void \); // done)p
+0 34(        void advance\( Basic_Agent* pCell, Phenotype& phenotype , double dt \);)p
+0 36(        // use this to properly size the secretion parameters to the microenviro)p
+0 37(nment)p
+0 38(        void sync_to_microenvironment\( Microenvironment* pNew_Microenvironment \))p
+0 39(; // done)p
+0 41(        void set_all_secretion_to_zero\( void \); // NEW)p
+0 42(        void set_all_uptake_to_zero\( void \); // NEW)p
+0 43(        void scale_all_secretion_by_factor\( double factor \); // NEW)p
+0 44(        void scale_all_uptake_by_factor\( double factor \); // NEW)p
+0 45(};)p
+0 47(class Cell_Functions)p
+0 48({)p
+0 49( private:)p
+0 50( public:)p
+0 51(        Cycle_Model cycle_model;)p
+0 53(        void \(*volume_update_function\)\( Cell* pCell, Phenotype& phenotype , doub)p
+0 54(le dt \); // used in cell)p
+0 55(        void \(*update_migration_bias\)\( Cell* pCell, Phenotype& phenotype, double)p
+0 56( dt \);)p
+0 58(        void \(*custom_cell_rule\)\( Cell* pCell, Phenotype& phenotype, double dt \))p
+0 59(;)p
+0 60(        void \(*update_phenotype\)\( Cell* pCell, Phenotype& phenotype, double dt \))p
+0 61(; // used in celll)p
+0 63(        void \(*update_velocity\)\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 0(        void \(*add_cell_basement_membrane_interactions\)\(Cell* pCell, Phenotype&)p
+1 1(phenotype, double dt \);)p
+1 2(        double \(*calculate_distance_to_membrane\)\( Cell* pCell, Phenotype& phenot)p
+1 3(ype, double dt \);)p
+1 5(        void \(*set_orientation\)\(Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 7(        void \(*contact_function\)\(Cell* pMyself, Phenotype& my_phenotype,)p
+1 8(                Cell* pOther, Phenotype& other_phenotype, double dt \);)p
+1 10(        /* prototyping / beta in 1.5.0 */)p
+1 11(/*)p
+1 12(        void \(*internal_substrate_function\)\(Cell* pCell, Phenotype& phenotype ,)p
+1 13(double dt \);)p
+1 14(        void \(*molecular_model_function\)\(Cell* pCell, Phenotype& phenotype , dou)p
+1 15(ble dt \);)p
+1 16(*/)p
+1 18(        Cell_Functions\(\); // done)p
+1 19(};)p
+1 21(class Bools)p
+1 22({)p
+1 23(        public:)p
+1 24(                std::vector<bool> values;)p
+1 25(                std::unordered_map<std::string,int> name_map;)p
+1 26(                std::string& name\( int i \);)p
+1 27(                std::vector<std::string> units;)p
+1 29(                int size\( void \);)p
+1 30(                void resize\( int n \);)p
+1 31(                int add\( std::string name , std::string units , bool value \);)p
+1 33(                bool& operator[]\( int i \);)p
+1 34(                bool& operator[]\( std::string name \);)p
+1 36(                Bools\(\);)p
+1 37(};)p
+1 39(class Molecular)p
+1 40({)p
+1 41(        private:)p
+1 42(        public:)p
+1 43(                Microenvironment* pMicroenvironment;)p
+1 45(                // model much of this from Secretion)p
+1 46(                Molecular\(\);)p
+1 48(                // we'll set this to replace BioFVM's version)p
+1 49(                std::vector<double> internalized_total_substrates;)p
+1 51(                // for each substrate, a fraction 0 <= f <= 1 of the)p
+1 52(                // total internalized substrate is released back inot)p
+1 53(                // the environment at death)p
+1 54(                std::vector<double> fraction_released_at_death;)p
+1 56(                // for each substrate, a fraction 0 <= f <= 1 of the)p
+1 57(                // total internalized substrate is transferred to the)p
+1 58(                // predatory cell when ingested)p
+1 59(                std::vector<double> fraction_transferred_when_ingested;)p
+1 61(                /* prototyping / beta in 1.5.0 */)p
+1 62(                // Boolean, Integer, and Double parameters)p
+1 63(/*)p
+1 64(                std::vector<bool> bools;)p
+Endpage
+%%Page 11 6
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       6)H
+0 0(                std::unordered_map<std::string,int> bool_name_map;)p
+0 1(                std::string& bool_name\( int i \);)p
+0 2(                std::vector<std::string> bool_units;)p
+0 3(                void resize_bools\( int n \);)p
+0 4(                int add_bool\( std::string name , std::string units , bool value)p
+0 5(\);)p
+0 6(                bool& access_bool\( std::string name \);)p
+0 8(                std::vector<int> ints;)p
+0 9(                std::unordered_map<std::string,int> int_name_map;)p
+0 10(                std::string& int_name\( int i \);)p
+0 11(                std::vector<std::string> int_units;)p
+0 12(                int& access_int\( std::string name \);)p
+0 14(                std::vector<int> doubles;)p
+0 15(                std::unordered_map<std::string,int> double_name_map;)p
+0 16(                std::string& double_name\( int i \);)p
+0 17(                std::vector<std::string> double_units;)p
+0 18(                double& access_double\( std::string name \);)p
+0 19(*/)p
+0 21(                // use this to properly size the secretion parameters to the)p
+0 22(                // microenvironment in molecular.pMicroenvironment.)p
+0 23(                void sync_to_current_microenvironment\( void \); // done)p
+0 25(//              void advance\( Basic_Agent* pCell, Phenotype& phenotype , double)p
+0 26(dt \);)p
+0 28(                // use this to properly size the secretion parameters to the mic)p
+0 29(roenvironment in)p
+0 30(                // pMicroenvironment)p
+0 31(                void sync_to_microenvironment\( Microenvironment* pNew_Microenvir)p
+0 32(onment \); // done)p
+0 34(                // use this)p
+0 35(                void sync_to_cell\( Basic_Agent* pCell \);)p
+0 37(};)p
+0 39(class Phenotype)p
+0 40({)p
+0 41( private:)p
+0 42( public:)p
+0 43(        bool flagged_for_division;)p
+0 44(        bool flagged_for_removal;)p
+0 46(        Cycle cycle;)p
+0 47(        Death death;)p
+0 48(        Volume volume;)p
+0 49(        Geometry geometry;)p
+0 50(        Mechanics mechanics;)p
+0 51(        Motility motility;)p
+0 52(        Secretion secretion;)p
+0 54(        Molecular molecular;)p
+0 56(        Phenotype\(\); // done)p
+0 58(        void sync_to_functions\( Cell_Functions& functions \); // done)p
+0 60(        void sync_to_microenvironment\( Microenvironment* pMicroenvironment \);)p
+0 62(        // make sure cycle, death, etc. are synced to the defaults.)p
+0 63(        void sync_to_default_functions\( void \); // done)p
+0 64(};)p
+1 1(};)p
+1 3(#endif)p
+1 5(--------------------------------------------)p
+1 6(#ifndef __PhysiCell_cell_container_h__)p
+1 7(#define __PhysiCell_cell_container_h__)p
+1 9(#include <vector>)p
+1 10(#include "PhysiCell_cell.h")p
+1 11(#include "../BioFVM/BioFVM_agent_container.h")p
+1 12(#include "../BioFVM/BioFVM_mesh.h")p
+1 13(#include "../BioFVM/BioFVM_microenvironment.h")p
+1 15(namespace PhysiCell{)p
+1 17(class Cell;)p
+1 19(class Cell_Container : public BioFVM::Agent_Container)p
+1 20({)p
+1 21( private:)p
+1 22(        std::vector<Cell*> cells_ready_to_divide; // the index of agents ready t)p
+1 23(o divide)p
+1 24(        std::vector<Cell*> cells_ready_to_die;)p
+1 25(        int boundary_condition_for_pushed_out_agents;   // what to do with pushe)p
+1 26(d out cells)p
+1 27(        bool initialzed = false;)p
+1 29( public:)p
+1 30(        BioFVM::Cartesian_Mesh underlying_mesh;)p
+1 31(        std::vector<double> max_cell_interactive_distance_in_voxel;)p
+1 32(        int num_divisions_in_current_step;)p
+1 33(        int num_deaths_in_current_step;)p
+1 35(        double last_diffusion_time  = 0.0;)p
+1 36(        double last_cell_cycle_time = 0.0;)p
+1 37(        double last_mechanics_time  = 0.0;)p
+1 38(        Cell_Container\(\);)p
+1 39(        void initialize\(double x_start, double x_end, double y_start, double y_e)p
+1 40(nd, double z_start, double z_end , double voxel_size\);)p
+1 41(        void initialize\(double x_start, double x_end, double y_start, double y_e)p
+1 42(nd, double z_start, double z_end , double dx, double dy, double dz\);)p
+1 43(        std::vector<std::vector<Cell*> > agent_grid;)p
+1 44(        std::vector<std::vector<Cell*> > agents_in_outer_voxels;)p
+1 46(        void update_all_cells\(double t\);)p
+1 47(        void update_all_cells\(double t, double dt\);)p
+1 48(        void update_all_cells\(double t, double phenotype_dt, double mechanics_dt)p
+1 49(\);)p
+1 50(        void update_all_cells\(double t, double phenotype_dt, double mechanics_dt)p
+1 51(, double diffusion_dt \);)p
+1 53(        void register_agent\( Cell* agent \);)p
+1 54(        void add_agent_to_outer_voxel\(Cell* agent\);)p
+1 55(        void remove_agent\(Cell* agent \);)p
+1 56(        void remove_agent_from_voxel\(Cell* agent, int voxel_index\);)p
+1 57(        void add_agent_to_voxel\(Cell* agent, int voxel_index\);)p
+1 59(        void flag_cell_for_division\( Cell* pCell \);)p
+1 60(        void flag_cell_for_removal\( Cell* pCell \);)p
+1 61(        bool contain_any_cell\(int voxel_index\);)p
+1 62(};)p
+1 64(int find_escaping_face_index\(Cell* agent\);)p
+Endpage
+%%Page 13 7
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       7)H
+0 0(extern std::vector<Cell*> *all_cells;)p
+0 2(Cell_Container* create_cell_container_for_microenvironment\( BioFVM::Microenviron)p
+0 3(ment& m , double mechanics_voxel_size \);)p
+0 7(};)p
+0 8(#endif)p
+0 10(--------------------------------------------)p
+0 11(#include <vector>)p
+0 12(#include <string>)p
+0 13(#include <unordered_map>)p
+0 14(#include <iostream>)p
+0 15(#include <fstream>)p
+0 17(#ifndef __PhysiCell_custom__)p
+0 18(#define __PhysiCell_custom__)p
+0 20(namespace PhysiCell)p
+0 21({)p
+0 23(class Variable)p
+0 24({)p
+0 25( private:)p
+0 26(        friend std::ostream& operator<<\(std::ostream& os, const Variable& v\); //)p
+0 27( done)p
+0 28( public:)p
+0 29(        std::string name;)p
+0 30(        double value;)p
+0 31(        std::string units;)p
+0 33(        Variable\(\);)p
+0 34(};)p
+0 36(class Vector_Variable)p
+0 37({)p
+0 38( private:)p
+0 39(        friend std::ostream& operator<<\(std::ostream& os, const Vector_Variable&)p
+0 40( v\); // done)p
+0 42( public:)p
+0 43(        std::string name;)p
+0 44(        std::vector<double> value;)p
+0 45(        std::string units;)p
+0 47(        Vector_Variable\(\);)p
+0 48(};)p
+0 50(class Custom_Cell_Data)p
+0 51({)p
+0 52( private:)p
+0 53(        std::unordered_map<std::string,int> name_to_index_map;)p
+0 54(//      std::unordered_map<std::string,int> vector_name_to_index_map;)p
+0 56(        friend std::ostream& operator<<\(std::ostream& os, const Custom_Cell_Data)p
+0 57(& ccd\); // done)p
+0 58( public:)p
+0 59(        std::vector<Variable> variables;)p
+0 60(        std::vector<Vector_Variable> vector_variables;)p
+0 62(        int add_variable\( Variable& v \); // done)p
+0 63(        int add_variable\( std::string name , std::string units , double value \);)p
+0 64( // done)p
+1 0(        int add_variable\( std::string name , double value \); // done)p
+1 2(        int add_vector_variable\( Vector_Variable& v \); // done)p
+1 3(        int add_vector_variable\( std::string name , std::string units , std::vec)p
+1 4(tor<double>& value \); // done)p
+1 5(        int add_vector_variable\( std::string name , std::vector<double>& value \))p
+1 6(; // done)p
+1 8(        int find_variable_index\( std::string name \); // done)p
+1 9(//      int find_vector_variable_index\( std::string name \); // done)p
+1 11(        // these access the scalar variables)p
+1 12(        double& operator[]\( int i \); // done)p
+1 13(        double& operator[]\( std::string name \); // done)p
+1 16(        Custom_Cell_Data\(\); // done)p
+1 17(        Custom_Cell_Data\( const Custom_Cell_Data& ccd \);)p
+1 18(};)p
+1 20(};)p
+1 22(#endif)p
+1 24(--------------------------------------------)p
+1 25(#ifndef __PhysiCell_constants_h__)p
+1 26(#define __PhysiCell_constants_h__)p
+1 28(#include <string>)p
+1 30(namespace PhysiCell)p
+1 31({)p
+1 33(class PhysiCell_constants)p
+1 34({)p
+1 35( public:)p
+1 36(        static constexpr double pi=3.1415926535897932384626433832795;)p
+1 38(        static constexpr double cell_removal_threshold_volume = 20; // 20 cubic)p
+1 39(microns -- about 1% of typical cell)p
+1 40(        static const int keep_pushed_out_cells_in_outer_voxel=1;)p
+1 41(        static const int solid_boundary = 2;)p
+1 42(        static const int default_boundary_condition_for_pushed_out_agents = keep)p
+1 43(_pushed_out_cells_in_outer_voxel;)p
+1 45(        static const int deterministic_necrosis = 0;)p
+1 46(        static const int stochastic_necrosis = 1;)p
+1 48(        static const int oxygen_index = 0; // deprecate)p
+1 49(        static const int glucose_index = 1; // deprecate)p
+1 51(        static const int TUMOR_TYPE=0; // deprecate)p
+1 52(        static const int VESSEL_TYPE=1; // deprecate)p
+1 54(        static const int mesh_min_x_index=0;)p
+1 55(        static const int mesh_min_y_index=1;)p
+1 56(        static const int mesh_min_z_index=2;)p
+1 57(        static const int mesh_max_x_index=3;)p
+1 58(        static const int mesh_max_y_index=4;)p
+1 59(        static const int mesh_max_z_index=5;)p
+1 61(        static const int mesh_lx_face_index=0;)p
+1 62(        static const int mesh_ly_face_index=1;)p
+1 63(        static const int mesh_lz_face_index=2;)p
+1 64(        static const int mesh_ux_face_index=3;)p
+Endpage
+%%Page 15 8
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       8)H
+0 0(        static const int mesh_uy_face_index=4;)p
+0 1(        static const int mesh_uz_face_index=5;)p
+0 3(        // currently recognized cell cycle models)p
+0 4(        static const int advanced_Ki67_cycle_model= 0;)p
+0 5(        static const int basic_Ki67_cycle_model=1;)p
+0 6(        static const int flow_cytometry_cycle_model=2;)p
+0 7(        static const int live_apoptotic_cycle_model=3;)p
+0 8(        static const int total_cells_cycle_model=4;)p
+0 9(        static const int live_cells_cycle_model = 5;)p
+0 10(        static const int flow_cytometry_separated_cycle_model = 6;)p
+0 11(        static const int cycling_quiescent_model = 7;)p
+0 13(        // currently recognized death models)p
+0 14(        static const int apoptosis_death_model = 100;)p
+0 15(        static const int necrosis_death_model = 101;)p
+0 16(        static const int autophagy_death_model = 102;)p
+0 18(        static const int custom_cycle_model=9999;)p
+0 20(        // currently recognized cell cycle and death phases)p
+0 21(        // cycle phases)p
+0 22(        static const int Ki67_positive_premitotic=0;)p
+0 23(        static const int Ki67_positive_postmitotic=1;)p
+0 24(        static const int Ki67_positive=2;)p
+0 25(        static const int Ki67_negative=3;)p
+0 26(        static const int G0G1_phase=4;)p
+0 27(        static const int G0_phase=5;)p
+0 28(        static const int G1_phase=6;)p
+0 29(        static const int G1a_phase=7;)p
+0 30(        static const int G1b_phase=8;)p
+0 31(        static const int G1c_phase=9;)p
+0 32(        static const int S_phase=10;)p
+0 33(        static const int G2M_phase=11;)p
+0 34(        static const int G2_phase=12;)p
+0 35(        static const int M_phase=13;)p
+0 36(        static const int live=14;)p
+0 38(        static const int G1pm_phase = 15;)p
+0 39(        static const int G1ps_phase = 16;)p
+0 41(        static const int cycling = 17;)p
+0 42(        static const int quiescent = 18;)p
+0 45(        static const int custom_phase = 9999;)p
+0 46(        // death phases)p
+0 47(        static const int apoptotic=100;)p
+0 48(        static const int necrotic_swelling=101;)p
+0 49(        static const int necrotic_lysed=102;)p
+0 50(        static const int necrotic=103;)p
+0 51(        static const int debris=104;)p
+0 52(};)p
+0 54(static std::string time_units = "min";)p
+0 55(static std::string space_units = "micron";)p
+0 56(static double diffusion_dt = 0.01;)p
+0 57(static double mechanics_dt = 0.1;)p
+0 58(static double phenotype_dt = 6.0;)p
+0 60(};)p
+0 62(#endif)p
+0 64(--------------------------------------------)p
+1 0(#ifndef __PhysiCell_standard_models_h__)p
+1 1(#define __PhysiCell_standard_models_h__)p
+1 3(#include "./PhysiCell_constants.h")p
+1 4(#include "./PhysiCell_phenotype.h")p
+1 6(namespace PhysiCell)p
+1 7({)p
+1 9(// standard cycle models:)p
+1 11(extern Cycle_Model Ki67_advanced, Ki67_basic, live, flow_cytometry_cycle_model,)p
+1 12(flow_cytometry_separated_cycle_model, cycling_quiescent;)p
+1 13(extern Cycle_Model apoptosis, necrosis;)p
+1 14(extern Death_Parameters apoptosis_parameters, necrosis_parameters;)p
+1 17(extern bool PhysiCell_standard_models_initialized;)p
+1 18(extern bool PhysiCell_standard_death_models_initialized;)p
+1 19(extern bool PhysiCell_standard_cycle_models_initialized;)p
+1 21(// standard entry function for the cycle models)p
+1 23(void standard_Ki67_positive_phase_entry_function\( Cell* pCell, Phenotype& phenot)p
+1 24(ype, double dt \); // done)p
+1 25(void standard_Ki67_negative_phase_entry_function\( Cell* pCell, Phenotype& phenot)p
+1 26(ype, double dt \); // done)p
+1 27(void standard_live_phase_entry_function\( Cell* pCell, Phenotype& phenotype, doub)p
+1 28(le dt \); // done)p
+1 30(void G1_phase_entry_function\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 31(void G0_phase_entry_function\( Cell* pCell, Phenotype& phenotype, double dt \);)p
+1 32(void S_phase_entry_function\( Cell* pCell, Phenotype& phenotype, double dt \); //)p
+1 33(done)p
+1 35(void standard_apoptosis_entry_function\( Cell* pCell, Phenotype& phenotype, doubl)p
+1 36(e dt \); // done)p
+1 37(void standard_necrosis_entry_function\( Cell* pCell, Phenotype& phenotype, double)p
+1 38( dt \);  // done)p
+1 39(void standard_lysis_entry_function\( Cell* pCell, Phenotype& phenotype, double dt)p
+1 40( \); // done)p
+1 42(bool standard_necrosis_arrest_function\( Cell* pCell, Phenotype& phenotype, doubl)p
+1 43(e dt \); // done)p
+1 45(// standard volume functions)p
+1 47(void standard_volume_update_function\( Cell* pCell, Phenotype& phenotype, double)p
+1 48(dt \); // done)p
+1 50(// standard mechanics functions)p
+1 52(void standard_update_cell_velocity\( Cell* pCell, Phenotype& phenotype, double dt)p
+1 53(\); // done)p
+1 54(void standard_add_basement_membrane_interactions\( Cell* pCell, Phenotype phenoty)p
+1 55(pe, double dt \);)p
+1 57(// other standard functions)p
+1 59(void empty_function\( Cell* pCell, Phenotype& phenotype, double dt \); // done)p
+1 60(void up_orientation\( Cell* pCell, Phenotype& phenotype, double dt \); // done)p
+1 62(// standard o2-based phenotype changes)p
+1 64(void update_cell_and_death_parameters_O2_based\( Cell* pCell, Phenotype& phenotyp)p
+Endpage
+%%Page 17 9
+Startpage
+(/Users/heiland/git/physicell_randy_fork/core/all_hdrs.txt         Wed Jun 12 16:29:34 2019
+       9)H
+0 0(e, double dt \);)p
+0 2(// create standard models)p
+0 4(bool create_standard_cell_cycle_models\( void \); // done)p
+0 5(bool create_standard_cell_death_models\( void \); // done)p
+0 6(bool create_standard_cycle_and_death_models\( void \); // done)p
+0 8(void initialize_default_cell_definition\( void \); // done)p
+0 10(};)p
+0 12(#endif)p
+0 14(--------------------------------------------)p
+0 15(#ifndef __PhysiCell_utilities_h__)p
+0 16(#define __PhysiCell_utilities_h__)p
+0 18(#include <iostream>)p
+0 19(#include <ctime>)p
+0 20(#include <cmath>)p
+0 21(#include <string>)p
+0 22(#include <vector>)p
+0 23(#include <random>)p
+0 24(#include <chrono>)p
+0 26(namespace PhysiCell{)p
+0 28(long SeedRandom\( long input \);)p
+0 29(long SeedRandom\( void \);)p
+0 30(double UniformRandom\( void \);)p
+0 31(double NormalRandom\( double mean, double standard_deviation \);)p
+0 32(double dist_squared\(std::vector<double> p1, std::vector<double> p2\);)p
+0 33(double dist\(std::vector<double> p1, std::vector<double> p2\);)p
+0 35(std::string get_PhysiCell_version\( void \);)p
+0 36(void get_PhysiCell_version\( std::string& pString \);)p
+0 38(void display_citations\( std::ostream& os \);)p
+0 39(void display_citations\( void \);)p
+0 40(void add_software_citation\( std::string name , std::string version, std::string)p
+0 41(DOI, std::string URL \);)p
+0 43(int choose_event\( std::vector<double>& probabilities \);)p
+0 45(};)p
+0 47(#endif)p
+0 49(--------------------------------------------)p
+Endpage
+%%Trailer
+PSPend
