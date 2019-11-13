@@ -190,6 +190,7 @@ def updateDropdown( ps ):
 #    options = [file[1] for file in ps.select.options if file[0].startswith("[") is True]
 #    print(ps.value)
     output_dir = ps.value
+    sub.update(output_dir)
 
 if (nanoHUB_flag or hublib_flag):
     path_sel = PathSelector('.', select_file=False)
@@ -249,7 +250,7 @@ else:
 
 
 # pass in (relative) directory where output data is located
-output_dir = "tmpdir"
+# output_dir = "tmpdir"
 # svg.update(output_dir)
 # sub.update_dropdown_fields("data")
-sub.update(output_dir)
+# sub.update(output_dir)
