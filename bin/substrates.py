@@ -19,6 +19,7 @@ import platform
 import zipfile
 from debug import debug_view 
 import warnings
+from pyMCDS import pyMCDS
 
 hublib_flag = True
 if platform.system() != 'Windows':
@@ -771,17 +772,20 @@ class SubstrateTab(object):
 
             # print("substrates.py: ------- numx, numy = ", self.numx, self.numy )
             if (self.numx == 0):   # need to parse vals from the config.xml
-                fname = os.path.join(self.output_dir, "config.xml")
-                tree = ET.parse(fname)
-                xml_root = tree.getroot()
-                xmin = float(xml_root.find(".//x_min").text)
-                xmax = float(xml_root.find(".//x_max").text)
-                dx = float(xml_root.find(".//dx").text)
-                ymin = float(xml_root.find(".//y_min").text)
-                ymax = float(xml_root.find(".//y_max").text)
-                dy = float(xml_root.find(".//dy").text)
-                self.numx =  math.ceil( (xmax - xmin) / dx)
-                self.numy =  math.ceil( (ymax - ymin) / dy)
+                # fname = os.path.join(self.output_dir, "config.xml")
+                # tree = ET.parse(fname)
+                # xml_root = tree.getroot()
+                # xmin = float(xml_root.find(".//x_min").text)
+                # xmax = float(xml_root.find(".//x_max").text)
+                # dx = float(xml_root.find(".//dx").text)
+                # ymin = float(xml_root.find(".//y_min").text)
+                # ymax = float(xml_root.find(".//y_max").text)
+                # dy = float(xml_root.find(".//dy").text)
+                # self.numx =  math.ceil( (xmax - xmin) / dx)
+                # self.numy =  math.ceil( (ymax - ymin) / dy)
+                mcds1 = pyMCDS('initial.xml', self.output_dir)
+                self.numx =  mcds1.data['mesh']['x_coordinates'].shape[0]
+                self.numy =  mcds1.data['mesh']['x_coordinates'].shape[1]
 
             xgrid = M[0, :].reshape(self.numy, self.numx)
             ygrid = M[1, :].reshape(self.numy, self.numx)
